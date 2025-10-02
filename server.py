@@ -2,22 +2,26 @@ import socket
 import threading
 import time
 
-# Constants
-PORT = 5000
 
+class Server:
+    PORT = 5000
 
-server_socket: socket.socket | None = None
+    def __init__(self):
+        self.socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.clients: dict[str, socket.socket] = {}
 
-clients = []
+    def on_client_join(self, s, address):
+        print(f"New connection from address {address}")
+        client_hash = hash(address)
 
+    def run(self):
+        self.socket.bind(("", Server.PORT))
+        self.socket.listen()
+        print(f"Listening on port {Server.PORT}")
 
-def init():
-    global server_socket
-
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(("", PORT))
-    server_socket.listen()
-    print(f"Listening on port {PORT}")
+    def client_join(self):
+        client_socket, address = self.socket.accept()
+        pass
 
 
 def listening():
@@ -29,6 +33,9 @@ def listening():
 
 def on_join(s, address):
     print(f"New connection from address {address}")
+    client_hash = hash(address)
+    clients[client_hash] = s
+
     l = len(clients)
 
     try:
@@ -45,7 +52,12 @@ def on_join(s, address):
             data = s.recv(1024)
             if not data:
                 break
-            print(f"Received from {name}: {data.decode(errors='ignore')}")
+
+            str_data = data.decode()
+            print(f"[{name}] - {str_data}")
+            for c in clients:
+                if c != client_hash:
+                    clients[c].send(f"[{name}] - {str_data}".encode())
     except Exception as e:
         print(f"Error with {address}: {e}")
     finally:
