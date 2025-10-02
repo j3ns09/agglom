@@ -29,12 +29,23 @@ def listening():
 
 def on_join(s, address):
     print(f"New connection from address {address}")
+    l = len(clients)
+
     try:
+        data = s.recv(1024)
+        if not data:
+            return
+        name = data.decode(errors="ignore")
+        if name.startswith("_NAME="):
+            name = name[6:].strip()
+        else:
+            name = "Unknown " + str(l)
+
         while True:
             data = s.recv(1024)
             if not data:
                 break
-            print(f"Received from {address}: {data.decode(errors='ignore')}")
+            print(f"Received from {name}: {data.decode(errors='ignore')}")
     except Exception as e:
         print(f"Error with {address}: {e}")
     finally:
@@ -45,16 +56,12 @@ def on_join(s, address):
 def main():
     init()
 
-    listening_thread = threading.Thread(target=listening, daemon=True)
-    listening_thread.start()
-
-    try:
-        while True:
-            time.sleep(0.2)
-    except KeyboardInterrupt:
-        print("Shutting down server...")
-        server_socket.close()
+    listening()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Shutting down server...")
+        server_socket.close()
