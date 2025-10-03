@@ -1,74 +1,58 @@
+import netifaces
 import socket
-import threading
 import time
 
-# Constants
-PORT = 5000
+
+def get_broadcast_addresses():
+    """
+    Returns a list of tuples (interface_name, ip, netmask, broadcast) for all active IPv4 interfaces
+    with valid broadcast addresses (excluding loopback and link-local).
+    """
+    results = {}
+    for iface in netifaces.interfaces():
+        try:
+            addrs = netifaces.ifaddresses(iface)
+            if netifaces.AF_INET not in addrs:
+                continue
+            ipv4_info = addrs[netifaces.AF_INET][0]
+            ip = ipv4_info.get("addr")
+            netmask = ipv4_info.get("netmask")
+            broadcast = ipv4_info.get("broadcast")
+
+            # Filter out loopback and link-local IPs
+            if ip is None or ip.startswith("127.") or ip.startswith("169.254."):
+                continue
+
+            if broadcast is None:
+                continue
+
+            results[iface] = {}
+            results[iface]["ip"] = ip
+            results[iface]["netmask"] = netmask
+            results[iface]["broadcast"] = broadcast
+        except Exception:
+            continue
+    return results
 
 
-server_socket: socket.socket | None = None
+for iface, data in get_broadcast_addresses().items():
+    print(iface, data["broadcast"])
+# DEFAULT_UDP_PORT = 15733
+# timeout = 10
 
-clients = []
-
-
-def init():
-    global server_socket
-
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(("", PORT))
-    server_socket.listen()
-    print(f"Listening on port {PORT}")
-
-
-def listening():
-    while True:
-        client_socket, address = server_socket.accept()
-        client_thread = threading.Thread(target=on_join, args=(client_socket, address))
-        client_thread.start()
-
-
-def on_join(s, address):
-    print(f"New connection from address {address}")
-    try:
-        while True:
-            data = s.recv(1024)
-            if not data:
-                break
-            print(f"Received from {address}: {data.decode(errors='ignore')}")
-    except Exception as e:
-        print(f"Error with {address}: {e}")
-    finally:
-        s.close()
-        print(f"Connection with {address} terminated")
-
-
-def client_join():
-    time.sleep(5)
-
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(("127.0.0.1", PORT))
-
-    time.sleep(5)
-
-    client_socket.close()
-
-
-def main():
-    init()
-
-    listening_thread = threading.Thread(target=listening, daemon=True)
-    listening_thread.start()
-
-    client_thread = threading.Thread(target=client_join, args=())
-    client_thread.start()
-
-    try:
-        while True:
-            time.sleep(0.2)
-    except KeyboardInterrupt:
-        print("Shutting down server...")
-        server_socket.close()
-
-
-if __name__ == "__main__":
-    main()
+# udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# udp.bind(("", DEFAULT_UDP_PORT))
+# udp.settimeout(timeout)
+# rooms = []
+# start = time.time()
+# while time.time() - start < timeout:
+#     try:
+#         data, addr = udp.recvfrom(1024)
+#         msg = data.decode()
+#         if msg.startswith("ROOM_HOST:"):
+#             print(msg)
+#     except socket.timeout:
+#         break
+#     except Exception:
+#         continue

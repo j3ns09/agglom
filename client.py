@@ -60,7 +60,7 @@ class Client:
 
 
 def init_client() -> Client:
-    SERVER_ADDRESS = ("127.0.0.1", PORT)
+    SERVER_ADDRESS = ("10.184.26.79", PORT)
 
     name = input("Quel est ton nom ?: ")
     client = Client(name, SERVER_ADDRESS)
