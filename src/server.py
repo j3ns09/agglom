@@ -15,9 +15,9 @@ class Server:
         {
             "prompt-name": "#808080 bold",
             "good": "#00ff00 bold",
-            "new": "#0000ff bold",
+            "new": "#F9F1A5 bold",
             "bad": "#ff0000",
-            "others": "#ff0000 bold",
+            "others": "#7592F9 bold",
         }
     )
 
