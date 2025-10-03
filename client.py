@@ -2,6 +2,7 @@ import socket
 import threading
 
 from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
 
 # Constants
 PORT = 5000
@@ -20,16 +21,17 @@ class Client:
         self.socket.send(f"_NAME={self.name}".encode())
 
     def send_loop(self):
-        while self.running:
-            try:
-                message = self.prompt_session.prompt("[Vous] >>> ")
-                if message.lower() in ("exit", "quit"):
+        with patch_stdout():
+            while self.running:
+                try:
+                    message = self.prompt_session.prompt("[Vous] >>> ")
+                    if message.lower() in ("exit", "quit"):
+                        self.running = False
+                        break
+                    self.socket.send(message.encode())
+                except (EOFError, KeyboardInterrupt):
                     self.running = False
                     break
-                self.socket.send(message.encode())
-            except (EOFError, KeyboardInterrupt):
-                self.running = False
-                break
 
     def receive_loop(self):
         while self.running:
@@ -37,9 +39,10 @@ class Client:
                 data = self.socket.recv(1024)
                 if not data:
                     break
-                print("\n" + data.decode())
+                message = data.decode(errors="ignore")
+                print(f"{message}")
             except Exception as e:
-                print(f"\n Erreur: {e}")
+                print(f"\nErreur: {e}")
                 break
 
     def run(self):
