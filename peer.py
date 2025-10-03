@@ -109,11 +109,10 @@ class Server:
 
     def broadcast_loop(self, broadcast_address: str):
         self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        msg = f"ROOM_HOST:{self.ip}:{self.tcp_address[1]}"
+        msg = f"ROOM_HOST:{self.ip}:{self.tcp_address[1]}:{self.name}"
 
         while self.running:
             self.udp_socket.sendto(msg.encode(), (broadcast_address, DEFAULT_UDP_PORT))
-            print(f"Broadcasting to {msg}")
             time.sleep(Server.BROADCAST_INTERVAL)
 
     def on_client_join(self, s: socket.socket, address: tuple[str, int]):
@@ -181,16 +180,16 @@ class Client:
         udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         udp.bind(("", DEFAULT_UDP_PORT))
         udp.settimeout(timeout)
-        rooms = []
+        rooms = {}
         start = time.time()
         while time.time() - start < timeout:
             try:
                 data, addr = udp.recvfrom(1024)
                 msg = data.decode()
                 if msg.startswith("ROOM_HOST:"):
-                    _, ip, port_str = msg.split(":")
+                    _, ip, port_str, name = msg.split(":")
                     port = int(port_str)
-                    rooms.append((ip, port))
+                    rooms[name] = (ip, port)
             except socket.timeout:
                 break
             except Exception:
@@ -246,16 +245,18 @@ class Client:
                 self.join_room("127.0.0.1", host.tcp_address[1])
 
         else:
-            rooms = self.discover_rooms()
+            rooms: set = self.discover_rooms()
             if not rooms:
                 print("No rooms found.")
                 return
             print("Rooms discovered:")
-            for i, (ip, p) in enumerate(rooms):
-                print(f"{i}: {ip}:{p}")
-            idx = int(input("Pick room index: "))
-            host_ip, host_port = rooms[idx]
-            self.join_room(host_ip, host_port)
+
+            result: str = choice(
+                message="Veuillez choisir la salle :",
+                options=[(addr, name) for name, addr in rooms.items()],
+            )
+
+            self.join_room(*result)
 
         self.send_loop()
 
