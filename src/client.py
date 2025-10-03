@@ -16,13 +16,13 @@ class Client:
         {
             "prompt-name": "#808080 bold",
             "good": "#00ff00 bold",
-            "new": "#0000ff bold",
+            "new": "#F9F1A5 bold",
             "bad": "#ff0000",
-            "others": "#ff0000 bold",
+            "others": "#7592F9 bold",
         }
     )
 
-    DISCOVERY_INTERVAL = 8
+    DISCOVERY_INTERVAL = 10
 
     def __init__(self, name: str):
         self.name: str = name
@@ -87,7 +87,7 @@ class Client:
                     break
                 sender, message = data.decode(errors="ignore").split(":")
                 print_formatted_text(
-                    HTML(f"[<others>{sender}</others> - {message}"),
+                    HTML(f"[<others>{sender}</others> - {message}]"),
                     style=Client.PROMPT_STYLE,
                 )
             except Exception as e:
