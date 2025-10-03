@@ -22,7 +22,7 @@ class Client:
         }
     )
 
-    DISCOVERY_INTERVAL = 10
+    DISCOVERY_INTERVAL = 5
 
     def __init__(self, name: str):
         self.name: str = name
@@ -87,7 +87,7 @@ class Client:
                     break
                 sender, message = data.decode(errors="ignore").split(":")
                 print_formatted_text(
-                    HTML(f"[<others>{sender}</others> - {message}]"),
+                    HTML(f"[<others>{sender}</others>] - {message}"),
                     style=Client.PROMPT_STYLE,
                 )
             except Exception as e:
