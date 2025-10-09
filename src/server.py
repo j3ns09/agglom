@@ -21,7 +21,7 @@ class Server:
         }
     )
 
-    BROADCAST_INTERVAL: int = 5
+    BROADCAST_INTERVAL: int = 2
 
     def __init__(self, name: str):
         self.name: str = name
@@ -56,6 +56,12 @@ class Server:
 
     def _get_address(self):
         return self.tcp_socket.getsockname()
+
+    def send_to_all(self, message: str, exception: socket.socket | None = None):
+        with self.lock:
+            for sock in self.clients.values():
+                if sock is not exception:
+                    sock.send(message.encode())
 
     def _get_all_interfaces(self):
         results = {}
@@ -94,16 +100,15 @@ class Server:
             else:
                 name = f"Anonymous #{self.client_count}"
 
+            self.send_to_all(f"{name} a rejoint la room", exception=s)
+
             while True:
                 data = s.recv(1024)
                 if not data:
                     break
 
                 str_data = data.decode()
-                with self.lock:
-                    for sock in self.clients.values():
-                        if sock is not s:
-                            sock.send(f"{name}:{str_data}".encode())
+                self.send_to_all(f"{name}:{str_data}", exception=s)
         finally:
             with self.lock:
                 self._remove_client(address)
@@ -162,6 +167,9 @@ class Server:
                 self.client_join()
         except OSError as e:
             print(f"Error: {e}")
+        except KeyboardInterrupt:
+            self.send_to_all("Le serveur a été interrompu")
+            self.stop()
 
     def stop(self):
         self.running = False
