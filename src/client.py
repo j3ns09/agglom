@@ -33,7 +33,10 @@ class Client:
     def discover_rooms(self, timeout=DISCOVERY_INTERVAL):
         """Listen for UDP broadcasts for `timeout` seconds, return list of (ip, port)"""
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
         udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
         udp.bind(("", DEFAULT_UDP_PORT))
         udp.settimeout(timeout)
         rooms = {}
